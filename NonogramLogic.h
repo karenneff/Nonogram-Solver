@@ -66,7 +66,7 @@ void step1B(NonogramStripe* row)
 {
    Segment *left, *right;
    right = row->getLastSegment();
-   if(left != NULL) //the row could, conceivably, be empty
+   if(right != NULL) //the row could, conceivably, be empty
    {
       //now, from right to left
       left = right->previous;
@@ -385,7 +385,7 @@ void step7(NonogramStripe* row)
    }
 };
 
-//Step 8: The "Maximim Length" step.
+//Step 8: The "Maximum Length" step.
 //If a section of all filled squares is as long as the longest
 //of the available segments, empty the squares to the left and
 //right of it. Also, if filling one square will create a section
