@@ -1,8 +1,6 @@
 # Nonogram-Solver
 
-This program is a nonogram solver that I wrote over Christmas break when I had nothing better to do.
-
-For those who don't know, a nonogram puzzle (also known as a griddler puzzle) consists of a grid of squares with a set of numeric clues for each row and column. Each clue represents one segment of black squares, and the segments must appear in the order listed; all other squares are white, and each segment represented by a clue is separated from adjacent segments by at least one white square. Some nonogram puzzles contain clues for several colors; in this case, adjacent segments that are different colors do not need to be separated by white squares.
+This program is a nonogram solver that I wrote over Christmas break when I had nothing better to do. If you are unfamiliar with nonogram puzzles, you can find information about them at http://www.nonograms.org/instructions
 
 This program currently supports black-and-white nonograms only. First, it reads in the clues from a text file provided by the user. Next, it solves the puzzle using a set of logical steps. Finally, it prints the solution to a new text file, using ' ' for a white square and '#' for a black square. You can view the solved puzzle by opening the text file.
 
