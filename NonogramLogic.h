@@ -10,9 +10,8 @@
 void putSegmentsInOrder(NonogramStripe*);
 void accountForExistingFills(NonogramStripe*);
 void validateSegmentPositions(NonogramStripe*);
-void step4(NonogramStripe*);
-void step5(NonogramStripe*);
-void step6(NonogramStripe*);
+void fillKnownSquares(NonogramStripe*);
+void emptyKnownSquares(NonogramStripe*);
 void step7(NonogramStripe*);
 void step8(NonogramStripe*);
 
@@ -21,17 +20,13 @@ void check(NonogramStripe* row)
    putSegmentsInOrder(row);
    accountForExistingFills(row);
    validateSegmentPositions(row);
-   step4(row);
-   if(row->isFinal())
-      step5(row);
-      
-   else
+   fillKnownSquares(row);
+   emptyKnownSquares(row);
+   if (!(row->isFinal()))
    {
-      step6(row);
-      step7(row);
-      step8(row);
+	   step7(row);
+	   step8(row);
    }
-   
 };
 
 //The first and most basic check.
@@ -218,25 +213,19 @@ void validateSegmentPositions(NonogramStripe* row)
 	validRight(row);
 };
 
-//Step 4: Having placed each segment as well as we
-//can for the moment, it is time to start filling
-//some squares.
 //If the furthest left and the furthest right a segment
-//can be are at the same spot, that segment is finalized.
+//can be are at the same spot, that segment is finalized,
+//and all squares within it are filled.
 //If they are closer together than the segment's length, 
 //the overlapping squares, at least, can be filled.
-void step4(NonogramStripe* row)
+void fillKnownSquares(NonogramStripe* row)
 {
    //from left to right, but there is no need to do right to left as well
    Segment *s = row->getFirstSegment();
    while(s != NULL)
    {
       if(s->minpos == s->maxpos)
-      {
          s->placed = true;
-         row->empty(s->minpos - 1);
-         row->empty(s->minpos + s->length);
-      }
       int i = s->maxpos;
       while(i < s->minpos + s->length)//if minpos = maxpos, this will fill the entire segment
       {
@@ -247,61 +236,29 @@ void step4(NonogramStripe* row)
    }
 };
 
-//Step 5: To be used only on a row that is being "finalized",
-//in other words, all segments are in their permanent places.
-//Empty any squares that are not already taken up by the segments.
-//If the row has not been finalized, the check function calls 
-//steps 6 through 8 instead of this more simplistic one.
-void step5(NonogramStripe* row)
+//Empty any squares before the first segment,
+//known to be between a particular segment and the next,
+//or after the last segment.
+void emptyKnownSquares(NonogramStripe* row)
 {
+	//from left to right, but there is no need to do right to left as well
+   Segment* s = row->getFirstSegment();
    int i = 0;
    while(i < row->getLength())
    {
-      if(row->cellAt(i) == '-')
-         row->empty(i);
-      i++;
-   }
-};
-
-//Step 6: Now, we check to see if any squares can be emptied
-//based on the entire row, not just a particular segment.
-//This is the first of three steps: if a particular square is 
-//known to be after one segment but before the next one, it is 
-//empty for sure. Ends are checked as well.
-//This step should not be reached if a row is finalized, and the 
-//row should be finalized immediately if it contains no segments;
-//therefore, the first segment is assumed to be non-null.
-void step6(NonogramStripe* row)
-{
-   //checked from left to right; first, the far left end
-   Segment* left = row->getFirstSegment();
-   int i = 0;
-   while(i < left->minpos)
-   {
-      row->empty(i);
-      i++;
-   }
-   
-   //next, the spaces between any consecutive segments
-   Segment* right = left->next;
-   while(right != NULL)
-   {
-      i = left->maxpos + left->length;
-      while(i < right->minpos)
-      {
-         row->empty(i);
-         i++;
-      }
-      left = left->next;
-      right = right->next;
-   }
-   
-   //finally, any space at the end of the row
-   i = left->maxpos + left->length;
-   while(i < row->getLength())
-   {
-      row->empty(i);
-      i++;
+	   int last;
+	   if (s == NULL)
+		   last = row->getLength() - 1;
+	   else
+		   last = s->minpos - 1;
+	   while (i <= last) {
+		   row->empty(i);
+		   i++;
+	   }
+	   if (s != NULL) {
+		   i = s->maxpos + s->length;
+		   s = s->next;
+	   }
    }
 };
 
@@ -385,7 +342,7 @@ void step7(NonogramStripe* row)
    }
 };
 
-//Step 8: The "Maximim Length" step.
+//Step 8: The "Maximum Length" step.
 //If a section of all filled squares is as long as the longest
 //of the available segments, empty the squares to the left and
 //right of it. Also, if filling one square will create a section
