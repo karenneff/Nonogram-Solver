@@ -8,8 +8,8 @@
 #include <iostream>
 
 void putSegmentsInOrder(NonogramStripe*);
-void step2(NonogramStripe*);
 void accountForExistingFills(NonogramStripe*);
+void validateSegmentPositions(NonogramStripe*);
 void step4(NonogramStripe*);
 void step5(NonogramStripe*);
 void step6(NonogramStripe*);
@@ -20,7 +20,7 @@ void check(NonogramStripe* row)
 {
    putSegmentsInOrder(row);
    accountForExistingFills(row);
-   step2(row);
+   validateSegmentPositions(row);
    step4(row);
    if(row->isFinal())
       step5(row);
@@ -88,79 +88,6 @@ void putSegmentsInOrder(NonogramStripe* row)
    orderFromRight(row);
 };
 
-//Step 2: Includes three separate, but related, checks.
-//Check 1: The proposed area for any segment may not contain
-//any empty spaces. If it does, move the segment past them.
-//Check 2: The proposed area for any segment must be followed
-//by an empty or undecided space. If it isn't, move the segment up.
-//Check 3: If, after doing this, there is a full square just before
-//a proposed segment, the segment that exists there is bigger than
-//the one you're trying to place. Move the segment out and start over.
-void step2(NonogramStripe* row)
-{
-   //first, from left to right
-   Segment *s = row->getFirstSegment();
-   while(s != NULL)
-   {
-      int before = s->minpos;
-      for(int i = s->minpos; i < s->minpos + s->length; i++)
-      {
-         if(row->cellAt(i) == ' ')
-         {
-            s->minpos = i+1;
-            if(s->minpos > s->maxpos)
-               throw "Logic error!";
-         }
-      }
-      while(row->cellAt(s->minpos + s->length)=='#')
-         s->minpos += 1;
-      if(row->cellAt(s->minpos - 1)=='#')
-      {
-         while(row->cellAt(s->minpos - 1)=='#')
-            s->minpos += 1;
-         orderFromLeft(row);
-      }
-      else
-      {
-         if(before != s->minpos)
-            orderFromLeft(row);
-         s = s->next;
-      }
-   }
-   
-   //now, from right to left
-   s = row->getLastSegment();
-   while(s != NULL)
-   {
-      int before = s->maxpos;
-      for(int i = s->maxpos + s->length - 1; i >= s->maxpos; i--)
-      {
-         if(row->cellAt(i) == ' ')
-         {
-            s->maxpos = i - s->length;
-            if(s->minpos > s->maxpos)
-               throw "Logic error!";
-         }
-      }
-      while(row->cellAt(s->maxpos - 1)=='#')
-         s->maxpos -= 1;
-         
-      if(row->cellAt(s->maxpos + s->length)=='#')
-      {
-         while(row->cellAt(s->maxpos + s->length)=='#')
-            s->maxpos -= 1;
-         orderFromRight(row);
-      }
-      else
-      {
-         if(before != s->maxpos)
-            orderFromRight(row);
-         s = s->previous;
-      }
-   }
-   
-};
-
 //If the row already contains one or more filled squares,
 //make sure that a segment can reach it.
 //For example,
@@ -220,6 +147,75 @@ void accountForExistingFills(NonogramStripe* row)
 {
 	anchorLeft(row);
 	anchorRight(row);
+};
+
+//Validation of each segment's placement.
+//No square within a segment may be empty,
+//and the squares immediately before and after
+//a segment may not be full.
+void validLeft(NonogramStripe* row)
+{
+	Segment *s = row->getFirstSegment();
+	while (s != NULL)
+	{
+		int before = s->minpos;
+		int i = before;
+		while (i < s->minpos + s->length)
+		{
+			if (row->cellAt(i) == ' ')
+			{
+				s->minpos = i + 1;
+				if (s->minpos > s->maxpos)
+					throw "Logic error!";
+			}
+			while(row->cellAt(s->minpos + s->length) == '#')
+				s->minpos += 1;
+			while (row->cellAt(s->minpos - 1) == '#')
+				s->minpos += 1;
+			i++;
+			if (i < s->minpos)
+				i = s->minpos;
+		}
+		if (before != s->minpos)
+			orderFromLeft(row);
+		s = s->next;
+	}
+}
+
+void validRight(NonogramStripe* row)
+{
+	Segment* s = row->getLastSegment();
+	while (s != NULL)
+	{
+		int before = s->maxpos;
+		int i = s->maxpos + s->length - 1;
+		while (i >= s->maxpos)
+		{
+			if (row->cellAt(i) == ' ')
+			{
+				s->maxpos = i - s->length;
+				if (s->minpos > s->maxpos)
+					throw "Logic error!";
+			}
+			while (row->cellAt(s->maxpos - 1) == '#')
+				s->maxpos -= 1;
+			while (row->cellAt(s->maxpos + s->length) == '#')
+				s->maxpos -= 1;
+			i--;
+			if (i > s->maxpos + s->length - 1)
+				i = s->maxpos + s->length - 1;
+		}
+		if (before != s->maxpos)
+			orderFromRight(row);
+		s = s->previous;
+		
+	}
+}
+
+void validateSegmentPositions(NonogramStripe* row)
+{
+	validLeft(row);
+	validRight(row);
 };
 
 //Step 4: Having placed each segment as well as we
