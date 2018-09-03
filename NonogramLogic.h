@@ -7,7 +7,7 @@
 #include "NonogramObjects.h"
 #include <iostream>
 
-void step1(NonogramStripe*);
+void putSegmentsInOrder(NonogramStripe*);
 void step2(NonogramStripe*);
 void step3(NonogramStripe*);
 void step4(NonogramStripe*);
@@ -18,7 +18,7 @@ void step8(NonogramStripe*);
 
 void check(NonogramStripe* row)
 {
-   step1(row);
+   putSegmentsInOrder(row);
    step3(row);
    step2(row);
    step4(row);
@@ -34,25 +34,23 @@ void check(NonogramStripe* row)
    
 };
 
-//Step 1: The most basic check.
-//Each segment must be to the right of the previous one,
+//The first and most basic check.
+//Segments must appear in the correct order,
 //and there must be at least one square separating them.
-//This step is reused so often that checks from the left
-//and right are separated, for efficiency.
 
-void step1A(NonogramStripe* row)
+void orderFromLeft(NonogramStripe* row)
 {
-   //first, from left to right
    Segment *left, *right;
    left = row->getFirstSegment();
-   if(left != NULL) //the row could, conceivably, be empty
+   if(left != NULL) //the row could be empty
    {
       right = left->next;
       while(right != NULL)
       {
-         if(right->minpos < left->minpos + left->length + 1)
+		 int correctPos = left->minpos + left->length + 1;
+         if(right->minpos < correctPos)
          {
-            right->minpos = left->minpos + left->length + 1;
+            right->minpos = correctPos;
             if(right->maxpos < right->minpos)
                throw "Logic error!";
          }
@@ -62,19 +60,19 @@ void step1A(NonogramStripe* row)
    }
 };
 
-void step1B(NonogramStripe* row)
+void orderFromRight(NonogramStripe* row)
 {
    Segment *left, *right;
    right = row->getLastSegment();
-   if(right != NULL) //the row could, conceivably, be empty
+   if(right != NULL) //the row could be empty
    {
-      //now, from right to left
       left = right->previous;
       while(left != NULL)
       {
-         if(left->maxpos > right->maxpos - left->length - 1)
+		 int correctPos = right->maxpos - left->length - 1;
+         if(left->maxpos > correctPos)
          {
-            left->maxpos = right->maxpos - left->length - 1;
+            left->maxpos = correctPos;
             if(left->maxpos < left->minpos)
                throw "Logic error!";
          }
@@ -84,10 +82,10 @@ void step1B(NonogramStripe* row)
    }
 };
 
-void step1(NonogramStripe* row)
+void putSegmentsInOrder(NonogramStripe* row)
 {
-   step1A(row);
-   step1B(row);
+   orderFromLeft(row);
+   orderFromRight(row);
 };
 
 //Step 2: Includes three separate, but related, checks.
@@ -120,12 +118,12 @@ void step2(NonogramStripe* row)
       {
          while(row->cellAt(s->minpos - 1)=='#')
             s->minpos += 1;
-         step1A(row);
+         orderFromLeft(row);
       }
       else
       {
          if(before != s->minpos)
-            step1A(row);
+            orderFromLeft(row);
          s = s->next;
       }
    }
@@ -151,12 +149,12 @@ void step2(NonogramStripe* row)
       {
          while(row->cellAt(s->maxpos + s->length)=='#')
             s->maxpos -= 1;
-         step1B(row);
+         orderFromRight(row);
       }
       else
       {
          if(before != s->maxpos)
-            step1B(row);
+            orderFromRight(row);
          s = s->previous;
       }
    }
@@ -385,7 +383,7 @@ void step7(NonogramStripe* row)
    }
 };
 
-//Step 8: The "Maximum Length" step.
+//Step 8: The "Maximim Length" step.
 //If a section of all filled squares is as long as the longest
 //of the available segments, empty the squares to the left and
 //right of it. Also, if filling one square will create a section

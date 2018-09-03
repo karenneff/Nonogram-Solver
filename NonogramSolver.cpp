@@ -12,6 +12,7 @@
 #include <fstream>
 #include <windows.h>
 #include <conio.h>
+#include <string>
 
 using namespace std;
 
@@ -117,7 +118,7 @@ int main()
          else if(allRows.lastModified == allRows.nextToCheck)//program has checked every row without modifying anything
          {
             cout << "Can\'t solve puzzle!";
-            getch();
+            _getch();
          }
          //then iterate to the next row to be checked
          if(allRows.numUnsolved > 0)
