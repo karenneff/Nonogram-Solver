@@ -9,7 +9,7 @@
 
 void putSegmentsInOrder(NonogramStripe*);
 void step2(NonogramStripe*);
-void step3(NonogramStripe*);
+void accountForExistingFills(NonogramStripe*);
 void step4(NonogramStripe*);
 void step5(NonogramStripe*);
 void step6(NonogramStripe*);
@@ -19,7 +19,7 @@ void step8(NonogramStripe*);
 void check(NonogramStripe* row)
 {
    putSegmentsInOrder(row);
-   step3(row);
+   accountForExistingFills(row);
    step2(row);
    step4(row);
    if(row->isFinal())
@@ -161,59 +161,65 @@ void step2(NonogramStripe* row)
    
 };
 
-//Step 3: Now we begin to deal with the needs
-//of the row as a whole, not just the segments.
-//If there is a full square at the beginning of
+//If the row already contains one or more filled squares,
+//make sure that a segment can reach it.
+//For example,
+//if there is a full square at the beginning of
 //a row, anchor the first segment to it.
-//Oddly enough, it makes more sense to do this
-//step before step 2.
-void step3(NonogramStripe* row)
+void anchorLeft(NonogramStripe* row)
 {
-   //first, from left to right... sort of
-   int i = 0;
-   Segment* s = row->getFirstSegment();
-   while(i < row->getLength() && s != NULL)
-   {
-      if(i >= s->maxpos + s->length)
-         s = s->next;
-      if(row->cellAt(i) == '#')
-      {
-         if(s==NULL)
-            throw "Logic error!";
-         if(i < s->maxpos)
-         {
-            s->maxpos = i;
-            if(s->minpos > s->maxpos)
-               throw "Logic error!";
-         }
-         i = s->maxpos + s->length;
-      }
-      else
-         i++;
-   }
-   
-   //now, from right to left... again, sort of
-   i = row->getLength()-1;
-   s = row->getLastSegment();
-   while(i > 0 && s != NULL)
-   {
-      if(i < s->minpos)
-         s = s->previous;
-      if(row->cellAt(i) == '#')
-      {
-         if(s==NULL)
-            throw "Logic error!";
-         if(i > s->minpos + s->length - 1)
-         {
-            s->minpos = i - s->length + 1;
-            if(s->minpos > s->maxpos)
-               throw "Logic error!";
-         }
-         i = s->minpos - 1;
-      }
-      else
-         i--;
-   }
+	int i = 0;
+	Segment* s = row->getFirstSegment();
+	while (i < row->getLength() && s != NULL)
+	{
+		if (i >= s->maxpos + s->length)
+			s = s->next;
+		if (row->cellAt(i) == '#')
+		{
+			if (s == NULL)
+				throw "Logic error!";
+			if (i < s->maxpos)
+			{
+				s->maxpos = i;
+				if (s->minpos > s->maxpos)
+					throw "Logic error!";
+			}
+			i = s->maxpos + s->length;
+		}
+		else
+			i++;
+	}
+}
+
+void anchorRight(NonogramStripe* row)
+{
+	int i = row->getLength() - 1;
+	Segment* s = row->getLastSegment();
+	while (i >= 0 && s != NULL)
+	{
+		if (i < s->minpos)
+			s = s->previous;
+		if (row->cellAt(i) == '#')
+		{
+			if (s == NULL)
+				throw "Logic error!";
+			if (i > s->minpos + s->length - 1)
+			{
+				s->minpos = i - s->length + 1;
+				if (s->minpos > s->maxpos)
+					throw "Logic error!";
+			}
+			i = s->minpos - 1;
+		}
+		else
+			i--;
+	}
+}
+
+void accountForExistingFills(NonogramStripe* row)
+{
+	anchorLeft(row);
+	anchorRight(row);
 };
 
 //Step 4: Having placed each segment as well as we
