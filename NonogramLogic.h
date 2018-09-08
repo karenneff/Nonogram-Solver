@@ -12,7 +12,7 @@ void accountForExistingFills(NonogramStripe*);
 void validateSegmentPositions(NonogramStripe*);
 void fillKnownSquares(NonogramStripe*);
 void emptyKnownSquares(NonogramStripe*);
-void step7(NonogramStripe*);
+void minimumLengthCheck(NonogramStripe*);
 void step8(NonogramStripe*);
 
 void check(NonogramStripe* row)
@@ -24,7 +24,7 @@ void check(NonogramStripe* row)
    emptyKnownSquares(row);
    if (!(row->isFinal()))
    {
-	   step7(row);
+	   minimumLengthCheck(row);
 	   step8(row);
    }
 };
@@ -255,13 +255,61 @@ void emptyKnownSquares(NonogramStripe* row)
    }
 };
 
-//Step 7: The "minimum length" step.
-//If ALL the available segments for a particular section
+//The "minimum length" step.
+//If ALL the available segments for part of a row
 //are of a minimum size, empty any undecided
 //spaces that are less than that length; also, if one
 //or more full spaces exist, fill in enough spaces to ensure
 //that the minimum length will be met.
-void step7(NonogramStripe* row)
+
+//Finds minimum length of any segment within range.
+int minLengthOverall(Segment* firstSeg, int start, int end) {
+	int result = firstSeg->length;
+	Segment* s = firstSeg->next;
+	while (s != NULL) {
+		if (s->minpos > end) 
+			break;
+		if (s->length < result)
+			result = s->length;
+		s = s->next;
+	}
+	return result;
+}
+
+//Finds minimum length of the first segment within range.
+int minLengthLeft(Segment* firstSeg, int start) {
+	int result = firstSeg->length;
+	Segment* s = firstSeg->next;
+	while (s != NULL) {
+		if (s->minpos > start)
+			break;
+		if(s->length < result)
+			result = s->length;
+		s = s->next;
+	}
+	return result;
+}
+
+//Finds minimum length of the last segment within range.
+int minLengthRight(Segment* firstSeg, int end) {
+	Segment* s = firstSeg;
+	while (s->maxpos < end - s->length)
+		s = s->next; //should not result in null pointer; if some segment can't go there, square should already be empty
+	int result = s->length;
+	s = s->next;
+	while (s != NULL)
+	{
+		if (s->minpos <= end)
+			break;
+		if(s->length < result)
+			result = s->length;
+		s = s->next;
+	}
+	return result;
+}
+
+//Put it all together now
+void minimumLengthCheck(NonogramStripe* row)
 {
 	int i = 0;
 	Segment *firstAvailable = row->getFirstSegment();
@@ -278,42 +326,19 @@ void step7(NonogramStripe* row)
 			while (row->cellAt(i) != ' ')
 				i++;
 			end = i;
-			minLength = firstAvailable->length;
-			Segment *s = firstAvailable->next;
-			while (s != NULL)
-			{
-				if (s->minpos <= end && s->length < minLength)
-					minLength = s->length;
-				s = s->next;
-			}
+			minLength = minLengthOverall(firstAvailable,start,end);
 			if (end - start + 1 < minLength)//empty any intervening spaces
 				row->empty(start, end + 1);
 			else if (minLength > 1)//ensure minimum length will be fulfilled
 			{
 				//first, from left to right
-				minLength = firstAvailable->length;
-				s = firstAvailable->next;
-				while (s != NULL)
-				{
-					if (s->minpos <= start && s->length < minLength)
-						minLength = s->length;
-					s = s->next;
-				}
+				minLength = minLengthLeft(firstAvailable,start);
 				int j = start;
 				while (row->cellAt(j) != '#' && j < start + minLength)
 					j++;
 				row->fill(j, start + minLength);
 				//then, from right to left
-				while (firstAvailable->maxpos < end - firstAvailable->length)
-					firstAvailable = firstAvailable->next; //should not result in null pointer; if some segment can't go there, square should already be empty
-				minLength = firstAvailable->length;
-				s = firstAvailable->next;
-				while (s != NULL)
-				{
-					if (s->minpos <= end && s->length < minLength)
-						minLength = s->length;
-					s = s->next;
-				}
+				minLength = minLengthRight(firstAvailable, end);
 				j = end;
 				while (row->cellAt(j) != '#' && j >= end - minLength)
 					j--;
