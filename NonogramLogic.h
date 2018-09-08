@@ -226,12 +226,7 @@ void fillKnownSquares(NonogramStripe* row)
    {
       if(s->minpos == s->maxpos)
          s->placed = true;
-      int i = s->maxpos;
-      while(i < s->minpos + s->length)//if minpos = maxpos, this will fill the entire segment
-      {
-         row->fill(i);
-         i++;
-      }
+	  row->fill(s->maxpos, s->minpos + s->length);//if minpos = maxpos, this will fill the entire segment
       s = s->next;
    }
 };
@@ -248,17 +243,15 @@ void emptyKnownSquares(NonogramStripe* row)
    {
 	   int last;
 	   if (s == NULL)
-		   last = row->getLength() - 1;
+		   last = row->getLength();
 	   else
-		   last = s->minpos - 1;
-	   while (i <= last) {
-		   row->empty(i);
-		   i++;
-	   }
-	   if (s != NULL) {
-		   i = s->maxpos + s->length;
-		   s = s->next;
-	   }
+		   last = s->minpos;
+	   row->empty(i,last);
+	   if (s == NULL)
+		   break;
+	   i = s->maxpos + s->length;
+	   s = s->next;
+	   
    }
 };
 
@@ -270,76 +263,64 @@ void emptyKnownSquares(NonogramStripe* row)
 //that the minimum length will be met.
 void step7(NonogramStripe* row)
 {
-   int i = 0;
-   Segment *firstAvailable = row->getFirstSegment();
-   while(i < row->getLength())
-   {
-      if(row->cellAt(i) == ' ')
-         i++;
-      else
-      {
-         while(i > firstAvailable->maxpos)
-            firstAvailable = firstAvailable->next;
-         int minLength, start, end;
-         start = i;
-         while(row->cellAt(i) != ' ')
-            i++;
-         end = i;
-         minLength = firstAvailable->length;
-         Segment *s = firstAvailable->next;
-         while(s != NULL)
-         {
-            if(s->minpos <= end && s->length < minLength)
-               minLength = s->length;
-            s = s->next;
-         }
-         if(end - start + 1 < minLength)//empty any intervening spaces
-         {
-            for(int j = start; j <= end; j++)
-               row->empty(j);
-         }
-         else if(minLength > 1)//ensure minimum length will be fulfilled
-         {
-            //first, from left to right
-            bool flag = false;
-            minLength = firstAvailable->length;
-            s = firstAvailable->next;
-            while(s != NULL)
-            {
-               if(s->minpos <= start && s->length < minLength)
-                  minLength = s->length;
-               s = s->next;
-            }
-            for(int j = start; j < start + minLength; j++)
-            {
-               if(row->cellAt(j) == '#')
-                  flag = true;
-               else if(flag)
-                  row->fill(j);
-            }
-            //then, from right to left
-            flag = false;
-            while(firstAvailable->maxpos < end - firstAvailable->length)
-               firstAvailable = firstAvailable->next; //should not result in null pointer; if some segment can't go there, square should already be empty
-            minLength = firstAvailable->length;
-            s = firstAvailable->next;
-            while(s != NULL)
-            {
-               if(s->minpos <= end && s->length < minLength)
-                  minLength = s->length;
-               s = s->next;
-            }
-            for(int j = end; j >= end - minLength; j--)
-            {
-               if(row->cellAt(j) == '#')
-                  flag = true;
-               else if(flag)
-                  row->fill(j);
-            }
-            
-         }
-      }
-   }
+	int i = 0;
+	Segment *firstAvailable = row->getFirstSegment();
+	while (i < row->getLength())
+	{
+		if (row->cellAt(i) == ' ')
+			i++;
+		else
+		{
+			while (i > firstAvailable->maxpos)
+				firstAvailable = firstAvailable->next;
+			int minLength, start, end;
+			start = i;
+			while (row->cellAt(i) != ' ')
+				i++;
+			end = i;
+			minLength = firstAvailable->length;
+			Segment *s = firstAvailable->next;
+			while (s != NULL)
+			{
+				if (s->minpos <= end && s->length < minLength)
+					minLength = s->length;
+				s = s->next;
+			}
+			if (end - start + 1 < minLength)//empty any intervening spaces
+				row->empty(start, end + 1);
+			else if (minLength > 1)//ensure minimum length will be fulfilled
+			{
+				//first, from left to right
+				minLength = firstAvailable->length;
+				s = firstAvailable->next;
+				while (s != NULL)
+				{
+					if (s->minpos <= start && s->length < minLength)
+						minLength = s->length;
+					s = s->next;
+				}
+				int j = start;
+				while (row->cellAt(j) != '#' && j < start + minLength)
+					j++;
+				row->fill(j, start + minLength);
+				//then, from right to left
+				while (firstAvailable->maxpos < end - firstAvailable->length)
+					firstAvailable = firstAvailable->next; //should not result in null pointer; if some segment can't go there, square should already be empty
+				minLength = firstAvailable->length;
+				s = firstAvailable->next;
+				while (s != NULL)
+				{
+					if (s->minpos <= end && s->length < minLength)
+						minLength = s->length;
+					s = s->next;
+				}
+				j = end;
+				while (row->cellAt(j) != '#' && j >= end - minLength)
+					j--;
+				row->fill(end - minLength, j);
+			}
+		}
+	}
 };
 
 //Step 8: The "Maximum Length" step.

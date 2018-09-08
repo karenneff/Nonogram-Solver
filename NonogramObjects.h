@@ -101,7 +101,15 @@ class NonogramStripe //to include both rows and columns, as implemented below
    bool modified;
    virtual char cellAt(int position) = 0;
    virtual void fill(int position) = 0;
+   void fill(int start, int end) {
+	   for (int ii = start; ii < end; ii++)
+		   this->fill(ii);
+   }
    virtual void empty(int position) = 0;
+   void empty(int start, int end) {
+	   for (int ii = start; ii < end; ii++)
+		   this->empty(ii);
+   }
    
    void add(Segment *nextSeg)
    {
